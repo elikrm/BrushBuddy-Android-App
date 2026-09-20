@@ -39,7 +39,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -50,6 +54,7 @@ import com.elnaz.brushbuddy.ui.components.HistoryScreen
 import com.elnaz.brushbuddy.utils.Constants
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,8 +152,43 @@ fun BottomNavigationBar(navController: NavHostController) {
         }
     }
 }
+enum class BrushingStateEnum {
+    NOT_BRUSHING,
+    BRUSHING,
+    ABORTED_SESSION,
+    CONFIRMED_SESSION,
+}
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
+    // the state variable at the top of Composable
+    var brushingState by remember { mutableStateOf(BrushingStateEnum.NOT_BRUSHING) }
+    var elapsedSeconds by remember {
+        mutableStateOf(0)
+    }
+    LaunchedEffect(brushingState) {
+        when (brushingState) {
+
+            BrushingStateEnum.BRUSHING -> {
+                elapsedSeconds = 0
+
+                while (true) {
+                    delay(1000)
+                    elapsedSeconds++
+                }
+            }
+
+            BrushingStateEnum.ABORTED_SESSION,
+            BrushingStateEnum.CONFIRMED_SESSION -> {
+                delay(1000)
+                brushingState = BrushingStateEnum.NOT_BRUSHING
+            }
+
+            BrushingStateEnum.NOT_BRUSHING -> {
+                // Nothing to do
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -242,7 +282,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     )
                     Spacer(modifier = Modifier.width(16.dp)) // Space between row elements
                     Text(
-                        text = "Brushing State ...",
+                        text = " $brushingState",
                         color = Color.DarkGray,
                         fontSize = 18.sp,
                         maxLines = 2,
@@ -350,10 +390,30 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     Image(
                         painter = painterResource(id = R.drawable.heart),
                         contentDescription = "Heart",
-                        modifier = Modifier.size(50.dp)
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clickable
+                            {
+                                /*
+                                * NOT_BRUSHING       → BRUSHING
+                                * BRUSHING           → check elapsed time
+                                * ABORTED_SESSION    → NOT_BRUSHING
+                                * CONFIRMED_SESSION  → NOT_BRUSHING */
+                                brushingState = when(brushingState)
+                                {
+                                    BrushingStateEnum.NOT_BRUSHING -> {BrushingStateEnum.BRUSHING}
+                                    BrushingStateEnum.BRUSHING ->
+                                    {
+                                    if (elapsedSeconds < 10) { BrushingStateEnum.ABORTED_SESSION }
+                                    else { BrushingStateEnum.CONFIRMED_SESSION } }
+                                    BrushingStateEnum.ABORTED_SESSION -> { BrushingStateEnum.ABORTED_SESSION }
+
+                                    BrushingStateEnum.CONFIRMED_SESSION -> { BrushingStateEnum.CONFIRMED_SESSION }
+                                }
+                            }
                     )
                     Text(
-                        text = "A cleaner smile brighter days!",
+                        text = " A cleaner smile brighter days!",
                         color = Color.Black,
                         fontSize = 18.sp
                     )
