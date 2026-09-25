@@ -195,7 +195,18 @@ enum class BrushingStateEnum {
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     // the state variable at the top of Composable
-    var brushingState by remember { mutableStateOf(BrushingStateEnum.NOT_BRUSHING) }
+    var brushingState by remember {
+        mutableStateOf(BrushingStateEnum.NOT_BRUSHING)
+    }
+    val messageToUser = remember(brushingState)
+    {
+        when (brushingState) {
+            BrushingStateEnum.NOT_BRUSHING -> {"Ready to brush"}
+            BrushingStateEnum.BRUSHING ->{"Keep going! You need at least 30 seconds"}
+            BrushingStateEnum.CONFIRMED_SESSION -> {"Great job!"}
+            BrushingStateEnum.ABORTED_SESSION -> {"Session too short"}
+        }
+    }
     var elapsedSeconds by remember {
         mutableStateOf(0)
     }
@@ -316,7 +327,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     )
                     Spacer(modifier = Modifier.width(16.dp)) // Space between row elements
                     Text(
-                        text = " $brushingState",
+                        text = " $brushingState Time: $elapsedSeconds s",
                         color = Color.DarkGray,
                         fontSize = 18.sp,
                         maxLines = 2,
@@ -325,16 +336,17 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                // Progress Bar
+                // Progress Bar (elapsed / max seconds), capped at 1.0 (100%)
+                val progress = (elapsedSeconds / 30f).coerceAtMost(1.0f)
                 LinearProgressIndicator(
-                    progress = { 0.5f }, // 0.5f represents 50% progress (1 out of 2 completed)
+                    progress = { progress }, // 0.5f represents 50% progress (1 out of 2 completed)
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF4CAF50), // Green filled track for success
                     trackColor = Color(0xFFE0E0E0), // Light gray background track
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Keep Going ! You need at least 30 seconds.",
+                    text = "$messageToUser.",
                     color = Color.Black,
                     fontSize = 18.sp
                 )
