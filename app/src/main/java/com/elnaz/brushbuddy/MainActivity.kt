@@ -1,6 +1,10 @@
 package com.elnaz.brushbuddy
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -57,8 +61,38 @@ import androidx.navigation.compose.composable
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 1. The array of permissions based on the Android system version
+        val requiredPermissions: Array<String> =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                )
+            } else {
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            }
+        // 2. Registering the permission request launcher
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            // Check if all requested permissions were granted by the user
+            val allGranted = permissions.entries.all { it.value }
+
+            if (allGranted) {
+                Log.d("BrushBuddy", "All permissions granted! Ready to scan and track proximity.")
+                // TODO: Trigger startScanning() logic here
+            } else {
+                Log.d("BrushBuddy", "Permissions denied. Cannot discover the toothbrush.")
+                // TODO: Update repository state to BluetoothState.UNAUTHORIZED here
+            }
+        }
+        // 3. Asking the user for the permissions
+        requestPermissionLauncher.launch(requiredPermissions)
         enableEdgeToEdge()
         setContent {
             BrushBuddyTheme {
