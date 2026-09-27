@@ -1,13 +1,11 @@
 package com.elnaz.brushbuddy.data.bluetooth
 import android.Manifest
-import android.content.Context
-import com.elnaz.brushbuddy.models.BluetoothState
-import kotlinx.coroutines.flow.MutableStateFlow
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
@@ -15,27 +13,31 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
+import com.elnaz.brushbuddy.models.BluetoothState
 import com.elnaz.brushbuddy.models.BrushingStatus
 import com.elnaz.brushbuddy.models.ConnectionState
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.Arrays
 
 
 //MutableStateFlow -> repository can change the value
 //StateFlow -> other classes can observe it but shouldn't change it
 class AndroidBluetoothRepository(private val context: Context
 ) : BluetoothRepository {
-    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE)
+            as BluetoothManager
     private val bluetoothAdapter = bluetoothManager.adapter
 
-    private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-
+//    private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
     private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-        .build()
+    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+    .build()
+
     //mutable internally
     private val _bluetoothState = MutableStateFlow(
         if (bluetoothAdapter?.isEnabled == true) BluetoothState.Enabled
@@ -80,7 +82,8 @@ class AndroidBluetoothRepository(private val context: Context
         ]
     )
     override fun startScanning(): Flow<BluetoothDeviceModel> = callbackFlow {
-
+        val bluetoothLeScanner =
+            bluetoothAdapter.bluetoothLeScanner
         val scanCallback = object : ScanCallback() {
 
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -137,8 +140,11 @@ class AndroidBluetoothRepository(private val context: Context
 
         Log.d("BrushBuddy", "Starting BLE scan")
 
+        val scanFilters = listOf(
+            ScanFilter.Builder().build()
+        )
         bluetoothLeScanner?.startScan(
-            null,
+            scanFilters,
             scanSettings,
             scanCallback
         )
@@ -161,5 +167,50 @@ class AndroidBluetoothRepository(private val context: Context
     override suspend fun disconnect() {
         TODO("Not yet implemented")
     }
+    @RequiresPermission(
+        allOf = [
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        ]
+    )
+    fun testSimpleScan() {
+    //learned from https://github.com/JimSeker/bluetooth/tree/master/BLEscannerDemo
+        val scanner = bluetoothAdapter.bluetoothLeScanner
+        Log.d(
+            "BrushBuddy",
+            "Simple scanner null = ${scanner == null}"
+        )
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
 
+        val filters = listOf(
+            ScanFilter.Builder().build()
+        )
+
+        val callback = object : ScanCallback() {
+
+            override fun onScanResult(
+                callbackType: Int,
+                result: ScanResult
+            ) {
+                Log.d(
+                    "BrushBuddy",
+                    "SIMPLE SCAN FOUND: ${result.device.name}, RSSI=${result.rssi}"
+                )
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                Log.e("BrushBuddy", "SIMPLE SCAN FAILED: $errorCode")
+            }
+        }
+
+        Log.d("BrushBuddy", "Starting SIMPLE scan")
+
+        scanner?.startScan(
+            filters,
+            settings,
+            callback
+        )
+    }
 }

@@ -127,16 +127,6 @@ class MainActivity : ComponentActivity() {
                         deviceList,
                         scannedDeviceList,
                         onStartScanning = {
-                            //collect as "subscribe/listen to this stream."
-//                            lifecycleScope.launch {
-//                                bluetoothRepository.startScanning().collect {
-//                                    device ->
-//                                    Log.d("BrushBuddy",
-//                                        "Device Found - Name: ${device.name}, " +
-//                                                "Address: ${device.address}, " +
-//                                                "RSSI: ${device.rssi}")
-//                                }
-//                            }
                             scanJob?.cancel()
 
                             scanJob = lifecycleScope.launch {
@@ -152,6 +142,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
+//                        onStartScanning = @androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT]) {
+//                            bluetoothRepository.testSimpleScan()
+//                        },
                         onStopScanning = {
                             Log.d("BrushBuddy", "Stop scanning requested")
 
