@@ -150,6 +150,21 @@ class MainActivity : ComponentActivity() {
 
                             scanJob?.cancel()
                             scanJob = null
+                        },
+                        onDeviceSelected = { device ->
+                            //just logging for now
+                            Log.d(
+                                "BrushBuddy",
+                                "Selected device: ${device.name}, Address: ${device.address}"
+                            )
+                            lifecycleScope.launch {
+                                bluetoothRepository.connectToDevice(device).collect { connectionState ->
+                                    Log.d(
+                                        "BrushBuddy",
+                                        "Connection state: $connectionState"
+                                    )
+                                }
+                            }
                         }
                     )
                 }
@@ -165,7 +180,8 @@ fun NavHostContainer(
     deviceList: List<BluetoothDeviceModel>,
     scannedDeviceList : List<BluetoothDeviceModel>,
     onStartScanning: () -> Unit,
-    onStopScanning: () -> Unit
+    onStopScanning: () -> Unit,
+    onDeviceSelected: (BluetoothDeviceModel) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -184,7 +200,8 @@ fun NavHostContainer(
             ProfileScreen(deviceList,
                 scannedDeviceList,
                 onStartScanning,
-                onStopScanning)
+                onStopScanning,
+                onDeviceSelected)
         }
     }
 }

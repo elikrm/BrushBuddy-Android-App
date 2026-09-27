@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.elnaz.brushbuddy.Greeting
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
+import androidx.compose.foundation.clickable
 
 @Composable
 fun HomeScreen() {
@@ -72,7 +73,8 @@ fun HistoryScreen() {
 fun ProfileScreen(devices: List<BluetoothDeviceModel>,
                   scannedDevices: List<BluetoothDeviceModel>,
                   onStartScanning: () -> Unit,
-                  onStopScanning: () -> Unit){
+                  onStopScanning: () -> Unit,
+                  onDeviceSelected: (BluetoothDeviceModel) -> Unit){
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -113,7 +115,8 @@ fun ProfileScreen(devices: List<BluetoothDeviceModel>,
             {
                 items(devices){
                     device ->
-                    DeviceItem(device =device)
+                    DeviceItem(device =device,
+                        onDeviceSelected = onDeviceSelected)
                 }
             }
         }
@@ -145,7 +148,8 @@ fun ProfileScreen(devices: List<BluetoothDeviceModel>,
             {
                 items(scannedDevices){
                         device ->
-                    DeviceItem(device =device)
+                    DeviceItem(device =device,
+                        onDeviceSelected = onDeviceSelected)
                 }
             }
         }
@@ -157,11 +161,15 @@ fun ProfileScreen(devices: List<BluetoothDeviceModel>,
     }
 }
 @Composable
-fun DeviceItem(device: BluetoothDeviceModel) {
+fun DeviceItem(device: BluetoothDeviceModel,
+               onDeviceSelected: (BluetoothDeviceModel) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable{
+                onDeviceSelected(device)
+                      },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(

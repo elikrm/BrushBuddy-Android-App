@@ -1,6 +1,9 @@
 package com.elnaz.brushbuddy.data.bluetooth
 import android.Manifest
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
@@ -139,6 +142,7 @@ class AndroidBluetoothRepository(private val context: Context
         )
 
         Log.d("BrushBuddy", "Starting BLE scan")
+        _scannedDevices.value = emptyList()
 
         val scanFilters = listOf(
             ScanFilter.Builder().build()
@@ -159,9 +163,32 @@ class AndroidBluetoothRepository(private val context: Context
     override fun stopScanning() {
         TODO("Not yet implemented")
     }
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    override fun connectToDevice(device: BluetoothDeviceModel): Flow<ConnectionState> = callbackFlow{
+        val bluetoothDevice =
+            bluetoothAdapter.getRemoteDevice(device.address)
+        trySend(ConnectionState.CONNECTING)
+        val gattCallback = object : BluetoothGattCallback() {
+            override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+                when (newState) {
+                    BluetoothProfile.STATE_CONNECTED -> {
+                        trySend(ConnectionState.CONNECTED)
+                    }
+                    BluetoothProfile.STATE_DISCONNECTED-> {
+                        trySend(ConnectionState.DISCONNECTED)
+                        close() // Close the flow channel
+                    }
+                }
+            }
+        }
+        // Next Step: Call connectGatt
+        val bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback)
 
-    override fun connectToDevice(device: BluetoothDeviceModel): Flow<ConnectionState> {
-        TODO("Not yet implemented")
+        // Clean up the connection when the Flow collector cancels or finishes
+        awaitClose {
+            bluetoothGatt?.disconnect()
+            bluetoothGatt?.close()
+        }
     }
 
     override suspend fun disconnect() {
