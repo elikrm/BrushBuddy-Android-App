@@ -49,6 +49,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -58,12 +60,18 @@ import com.elnaz.brushbuddy.ui.components.HistoryScreen
 import com.elnaz.brushbuddy.utils.Constants
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.elnaz.brushbuddy.data.bluetooth.AndroidBluetoothRepository
+import com.elnaz.brushbuddy.data.bluetooth.BluetoothRepository
+import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import kotlinx.coroutines.delay
-
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 class MainActivity : ComponentActivity() {
-
+    private var scanJob: Job? = null
+    private lateinit var bluetoothRepository: AndroidBluetoothRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        bluetoothRepository = AndroidBluetoothRepository(this)
         // 1. The array of permissions based on the Android system version
         val requiredPermissions: Array<String> =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -79,13 +87,14 @@ class MainActivity : ComponentActivity() {
         // 2. Registering the permission request launcher
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
+        ) @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) { permissions ->
             // Check if all requested permissions were granted by the user
             val allGranted = permissions.entries.all { it.value }
 
             if (allGranted) {
                 Log.d("BrushBuddy", "All permissions granted! Ready to scan and track proximity.")
                 // TODO: Trigger startScanning() logic here
+                bluetoothRepository.loadMyPairedDevices()
             } else {
                 Log.d("BrushBuddy", "Permissions denied. Cannot discover the toothbrush.")
                 // TODO: Update repository state to BluetoothState.UNAUTHORIZED here
@@ -95,6 +104,8 @@ class MainActivity : ComponentActivity() {
         requestPermissionLauncher.launch(requiredPermissions)
         enableEdgeToEdge()
         setContent {
+            val deviceList by bluetoothRepository.bondedDevices.collectAsStateWithLifecycle()
+            val scannedDeviceList by bluetoothRepository.scannedDevices.collectAsStateWithLifecycle()
             BrushBuddyTheme {
                 val navController = rememberNavController()
                 Scaffold(
@@ -112,18 +123,56 @@ class MainActivity : ComponentActivity() {
                 { innerPadding ->
                     NavHostContainer(
                         navController = navController,
-                        padding = innerPadding
+                        padding = innerPadding,
+                        deviceList,
+                        scannedDeviceList,
+                        onStartScanning = {
+                            //collect as "subscribe/listen to this stream."
+//                            lifecycleScope.launch {
+//                                bluetoothRepository.startScanning().collect {
+//                                    device ->
+//                                    Log.d("BrushBuddy",
+//                                        "Device Found - Name: ${device.name}, " +
+//                                                "Address: ${device.address}, " +
+//                                                "RSSI: ${device.rssi}")
+//                                }
+//                            }
+                            scanJob?.cancel()
+
+                            scanJob = lifecycleScope.launch {
+
+                                bluetoothRepository.startScanning().collect { device ->
+
+                                    Log.d(
+                                        "BrushBuddy",
+                                        "Device: ${device.name}, " +
+                                                "Address: ${device.address}, " +
+                                                "RSSI: ${device.rssi}"
+                                    )
+                                }
+                            }
+                        },
+                        onStopScanning = {
+                            Log.d("BrushBuddy", "Stop scanning requested")
+
+                            scanJob?.cancel()
+                            scanJob = null
+                        }
                     )
                 }
             }
         }
     }
 }
-//follow this https://www.geeksforgeeks.org/kotlin/bottom-navigation-bar-in-android-jetpack-compose/
+
 @Composable
 fun NavHostContainer(
     navController: NavHostController,
-    padding: PaddingValues
+    padding: PaddingValues,
+    deviceList: List<BluetoothDeviceModel>,
+    scannedDeviceList : List<BluetoothDeviceModel>,
+    onStartScanning: () -> Unit,
+    onStopScanning: () -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -139,7 +188,10 @@ fun NavHostContainer(
         }
 
         composable("profile") {
-            ProfileScreen()
+            ProfileScreen(deviceList,
+                scannedDeviceList,
+                onStartScanning,
+                onStopScanning)
         }
     }
 }
