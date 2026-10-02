@@ -2,6 +2,7 @@ package com.elnaz.brushbuddy.data.bluetooth
 import android.Manifest
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -169,14 +170,37 @@ class AndroidBluetoothRepository(private val context: Context
             bluetoothAdapter.getRemoteDevice(device.address)
         trySend(ConnectionState.CONNECTING)
         val gattCallback = object : BluetoothGattCallback() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
                         trySend(ConnectionState.CONNECTED)
+                        gatt?.discoverServices()
                     }
                     BluetoothProfile.STATE_DISCONNECTED-> {
                         trySend(ConnectionState.DISCONNECTED)
                         close() // Close the flow channel
+                    }
+                }
+            }
+            override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                if(status == BluetoothGatt.GATT_SUCCESS) {
+                    val services = gatt.services
+                    services.forEach { service ->
+                        Log.d(
+                            "BrushBuddy",
+                            "gatt service uuid : ${service.uuid}"
+                        )
+                        service.characteristics.forEach { characteristic ->
+                            val canNotify = characteristic.properties and
+                                    BluetoothGattCharacteristic.PROPERTY_NOTIFY !=0;
+                            Log.d(
+                                "BrushBuddy",
+                                "gatt characteristic uuid : ${characteristic.uuid} " +
+                                        "properties: 0x${characteristic.properties.toString(16)} " +
+                                        "canNotify : $canNotify")
+
+                        }
                     }
                 }
             }
@@ -190,7 +214,6 @@ class AndroidBluetoothRepository(private val context: Context
             bluetoothGatt?.close()
         }
     }
-
     override suspend fun disconnect() {
         TODO("Not yet implemented")
     }
