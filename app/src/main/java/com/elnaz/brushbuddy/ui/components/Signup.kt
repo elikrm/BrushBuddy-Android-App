@@ -40,15 +40,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import com.elnaz.brushbuddy.R
+import com.elnaz.brushbuddy.utils.UserAuth
 
 @Preview
 @Composable
-fun LogiScreen(){
- var email by remember { mutableStateOf("") }
- var password by remember {mutableStateOf("")}
+fun Signup(){
+    var email by remember { mutableStateOf("") }
+    var password by remember {mutableStateOf("")}
 
     Column(
-            modifier = Modifier
+        modifier = Modifier
             .fillMaxSize().background(Color.White)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 50.dp)
@@ -83,7 +84,7 @@ fun LogiScreen(){
         }
         Spacer(modifier = Modifier.height(100.dp))
         Text(
-            "Sign in to your Brushbuddy app",
+            "Sign up here",
             color = Color.Black,
             fontSize = 15.sp,
             modifier = Modifier.padding(bottom = 30.dp).align(Alignment.CenterHorizontally)
@@ -133,26 +134,26 @@ fun LogiScreen(){
 
 
 
-        ){
+            ){
             Text (
 
-                "sign in" ,
+                "sign up" ,
                 color = Color.White
             )
         }
 
-    val annotatedString = buildAnnotatedString {
-        append("Don't have an account? ")
-        pushStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Blue))
-        append("Sign up")
+        val annotatedString = buildAnnotatedString {
 
-    }
-    val annotatedStringpass = buildAnnotatedString {
+            pushStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Blue))
+            append("Back to login page")
 
-        pushStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Blue))
-        append("Forgot password? ")
+        }
+        val annotatedStringpass = buildAnnotatedString {
 
-    }
+            pushStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Blue))
+            append("Forgot password? ")
+
+        }
         Text(
             text = annotatedString,
             modifier = Modifier.align(Alignment.CenterHorizontally)
