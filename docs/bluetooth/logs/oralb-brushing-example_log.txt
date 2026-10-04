@@ -13,7 +13,21 @@ Capture GATT notifications from FF04-FF0D while brushing.
 Notes:
 - Notifications appear multiple times due to an apparent duplicate GATT connection/subscription issue.
 
-Raw Log:
+Raw Log 2:
+--------
+2026-10-05 09:53:57.770 11361-11374 BluetoothGatt           com.elnaz.brushbuddy                 D  setCharacteristicNotification() - uuid: a0f0ff04-5047-4d53-8208-4f72616c2d42 enable: true
+2026-10-05 09:53:57.793 11361-11374 BluetoothGatt           com.elnaz.brushbuddy                 D  setCharacteristicNotification() - uuid: a0f0ff05-5047-4d53-8208-4f72616c2d42 enable: true
+2026-10-05 09:53:57.816 11361-11374 BluetoothGatt           com.elnaz.brushbuddy                 D  setCharacteristicNotification() - uuid: a0f0ff08-5047-4d53-8208-4f72616c2d42 enable: true
+2026-10-05 09:53:59.829 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff04-5047-4d53-8208-4f72616c2d42 value: 08 00
+2026-10-05 09:53:59.831 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff04-5047-4d53-8208-4f72616c2d42 value: 03 00
+2026-10-05 09:53:59.832 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff08-5047-4d53-8208-4f72616c2d42 value: 00 00
+2026-10-05 09:54:00.816 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff08-5047-4d53-8208-4f72616c2d42 value: 00 01
+2026-10-05 09:54:00.872 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff05-5047-4d53-8208-4f72616c2d42 value: 13 7D 02 00
+2026-10-05 09:54:01.834 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff08-5047-4d53-8208-4f72616c2d42 value: 00 02
+2026-10-05 09:54:01.863 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff05-5047-4d53-8208-4f72616c2d42 value: 13 7D 02 00
+2026-10-05 09:54:02.822 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff08-5047-4d53-8208-4f72616c2d42 value: 00 03
+2026-10-05 09:54:02.850 11361-11374 BrushBuddy              com.elnaz.brushbuddy                 D  NOTIFICATION uuid: a0f0ff05-5047-4d53-8208-4f72616c2d42 value: 13 7D 02 00
+Raw Log 1:
 --------
 2026-10-04 17:55:41.198  9572-12066 BluetoothGatt           com.elnaz.brushbuddy                 D  setCharacteristicNotification() - uuid: a0f0ff04-5047-4d53-8208-4f72616c2d42 enable: true
 2026-10-04 17:55:41.199  9572-9941  BluetoothGatt           com.elnaz.brushbuddy                 D  setCharacteristicNotification() - uuid: a0f0ff04-5047-4d53-8208-4f72616c2d42 enable: true

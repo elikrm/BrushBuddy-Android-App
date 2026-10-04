@@ -203,7 +203,8 @@ class AndroidBluetoothRepository(private val context: Context
 
                         }
                     }
-                    finCharacteristic(gatt)
+//                    finAllCharacteristic(gatt)
+                    findStatusBatteryTimeCharacteristic(gatt)
 //                    enableOralBFF04Notifications(gatt) /* just for uuid CHAR_FF04_UUID */
                 }
             }
@@ -228,7 +229,24 @@ class AndroidBluetoothRepository(private val context: Context
                 }
             }
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-            private fun finCharacteristic(gatt: BluetoothGatt){
+            private fun findStatusBatteryTimeCharacteristic(gatt: BluetoothGatt){
+                descriptorQueue.clear()
+                val service = gatt.getService((SERVICE_UUID))?: return
+                for (i in listOf(4, 5, 8)){
+                    val hexSuffix = String.format("%02x", i)
+                    val charUuid = UUID.fromString("a0f0ff${hexSuffix}-5047-4d53-8208-4f72616c2d42")
+                    val characteristic = service.getCharacteristic(charUuid)
+                    if (characteristic != null) {
+                        Log.d("BrushBuddy", "Queued characteristic: FF$hexSuffix")
+                        descriptorQueue.add(characteristic)
+                    } else {
+                        Log.w("BrushBuddy", "Characteristic FF$hexSuffix not found on device")
+                    }
+                }
+                processNextInQueue(gatt)
+            }
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            private fun finAllCharacteristic(gatt: BluetoothGatt){
                 descriptorQueue.clear()
                 val service = gatt.getService((SERVICE_UUID))?: return
                 // Loop through hex suffixes 04 to 0D (a0f0ff00-5047-4d53-8208-4f72616c2d42)

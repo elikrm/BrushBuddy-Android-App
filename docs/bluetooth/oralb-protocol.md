@@ -118,3 +118,57 @@ The current implementation subscribes to FF04-FF0D. This will be changed to subs
 - **FF08 - Brushing Time:** track the duration of the brushing session.
 
 Other characteristics will be kept as future options but will not be subscribed to for the current MVP.
+
+## BrushBuddy GATT Test Results
+
+### FF04 - Status
+
+Observed when brushing started:
+
+    08 00
+    03 00
+
+`0x03` corresponds to RUN.
+
+### FF05 - Battery
+
+Observed:
+
+    13 7D 02 00
+
+Decoded as:
+
+- Battery level: `0x13` = 19%
+- Remaining brushing time: `0x027D` = 637 seconds
+- Unknown byte: `0x00`
+
+Format:
+
+    [battery %, remaining seconds (2-byte little-endian), unknown]
+
+Remaining seconds are documented as available for protocol versions greater than 3.
+
+### FF08 - Brushing Time
+
+Observed:
+
+    00 00
+    00 01
+    00 02
+    00 03
+
+Format:
+
+    [minutes, seconds]
+
+On the tested toothbrush, notifications were observed for the first three seconds and then stopped, despite brushing continuing.
+
+### GATT MVP Characteristics
+
+The current BrushBuddy implementation subscribes only to:
+
+- FF04 - Status
+- FF05 - Battery
+- FF08 - Brushing Time
+
+Further GATT investigation is paused while BrushBuddy evaluates passive BLE advertisement parsing.

@@ -132,7 +132,8 @@ fun ProfileScreen(devices: List<BluetoothDeviceModel>,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
-        if(scannedDevices.isEmpty())
+        val visibleDevices = scannedDevices.filter { !it.name.isNullOrBlank() && it.name != "Unknown" }
+        if(visibleDevices.isEmpty())
         {
             Text(
                 text = "No scanned devices found.",
@@ -146,7 +147,7 @@ fun ProfileScreen(devices: List<BluetoothDeviceModel>,
                 modifier = Modifier.weight(1f)
             )
             {
-                items(scannedDevices){
+                items(visibleDevices){
                         device ->
                     DeviceItem(device =device,
                         onDeviceSelected = onDeviceSelected)
