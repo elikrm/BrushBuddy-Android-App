@@ -3,6 +3,7 @@ import android.Manifest
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -26,7 +27,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import java.util.Arrays
+import java.util.LinkedList
+import java.util.Queue
+import java.util.UUID
 
 
 //MutableStateFlow -> repository can change the value
@@ -183,26 +186,131 @@ class AndroidBluetoothRepository(private val context: Context
                     }
                 }
             }
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
                 if(status == BluetoothGatt.GATT_SUCCESS) {
                     val services = gatt.services
                     services.forEach { service ->
-                        Log.d(
-                            "BrushBuddy",
-                            "gatt service uuid : ${service.uuid}"
+                        Log.d("BrushBuddy","gatt service uuid : ${service.uuid}"
                         )
                         service.characteristics.forEach { characteristic ->
                             val canNotify = characteristic.properties and
                                     BluetoothGattCharacteristic.PROPERTY_NOTIFY !=0;
-                            Log.d(
-                                "BrushBuddy",
+                            Log.d("BrushBuddy",
                                 "gatt characteristic uuid : ${characteristic.uuid} " +
                                         "properties: 0x${characteristic.properties.toString(16)} " +
                                         "canNotify : $canNotify")
 
                         }
                     }
+                    finCharacteristic(gatt)
+//                    enableOralBFF04Notifications(gatt) /* just for uuid CHAR_FF04_UUID */
                 }
+            }
+            val SERVICE_UUID: UUID = UUID.fromString("a0f0ff00-5047-4d53-8208-4f72616c2d42")
+            // Standard BLE Client Characteristic Configuration Descriptor (CCCD) UUID
+            val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+            private val descriptorQueue: Queue<BluetoothGattCharacteristic> = LinkedList()
+            val CHAR_FF04_UUID: UUID = UUID.fromString("a0f0ff04-5047-4d53-8208-4f72616c2d42")
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            fun enableOralBFF04Notifications(gatt: BluetoothGatt) {
+                val service = gatt.getService(SERVICE_UUID) ?: return
+                val characteristic = service.getCharacteristic(CHAR_FF04_UUID) ?: return
+                gatt.setCharacteristicNotification(characteristic, true)
+                val descriptor = characteristic.getDescriptor(CCCD_UUID)
+                if (descriptor != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                    } else {
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
+                    }
+                }
+            }
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            private fun finCharacteristic(gatt: BluetoothGatt){
+                descriptorQueue.clear()
+                val service = gatt.getService((SERVICE_UUID))?: return
+                // Loop through hex suffixes 04 to 0D (a0f0ff00-5047-4d53-8208-4f72616c2d42)
+                for(i in 4..13){
+                    val hexSuffix = String.format("%02x", i)
+                    val charUuid = UUID.fromString("a0f0ff${hexSuffix}-5047-4d53-8208-4f72616c2d42")
+                    val characteristic = service.getCharacteristic(charUuid)
+                    if (characteristic != null) {
+                        Log.d("BrushBuddy", "Queued characteristic: FF$hexSuffix")
+                        descriptorQueue.add(characteristic)
+                    } else {
+                        Log.w("BrushBuddy", "Characteristic FF$hexSuffix not found on device")
+                    }
+                }
+                processNextInQueue(gatt)
+            }
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            private fun processNextInQueue(gatt: BluetoothGatt) {
+                if (descriptorQueue.isEmpty()) {
+                    Log.d("BrushBuddy", "All targeted Oral-B notifications successfully registered!")
+                    return
+                }
+                // Take the next characteristic from the queue.
+                val characteristic = descriptorQueue.poll() ?: return
+                val shortName = characteristic.uuid.toString().substring(6, 8).uppercase() // e.g. "04"
+
+                // A. Tell Android that we want notifications from this characteristic.
+                val notificationEnabled = gatt.setCharacteristicNotification(characteristic, true)
+                Log.d(
+                    "BrushBuddy",
+                    "Local notification FF$shortName enabled: $notificationEnabled"
+                )
+                // B. Find this characteristic's CCCD (0x2902).
+                val descriptor = characteristic.getDescriptor(CCCD_UUID)
+                if (descriptor == null) {
+
+                    Log.e("BrushBuddy","CCCD missing for FF$shortName")
+                    // Can't enable this one, so try the next one.
+                    processNextInQueue(gatt)
+                    return
+                }
+                Log.d("BrushBuddy","Writing CCCD for FF$shortName")
+                // Tell the toothbrush to send notifications.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ) {
+                    gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                } else {
+
+                    @Suppress("DEPRECATION")
+                    descriptor.value =
+                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+
+                    @Suppress("DEPRECATION")
+                    gatt.writeDescriptor(descriptor)
+                }
+            }
+            // Android calls this when the CCCD write above finishes.
+            //
+            // FF04 finished -> process FF05
+            // FF05 finished -> process FF06
+            // ...
+            // FF0D finished -> queue becomes empty
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+                val characteristicUuid = descriptor.characteristic.uuid
+                Log.d("BrushBuddy", "Descriptor write completed for " +
+                            "$characteristicUuid status: $status")
+                // Now enable the NEXT characteristic.
+                processNextInQueue(gatt)
+            }
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                value: ByteArray
+            ) {
+                val hexValue = value.joinToString(" ") {
+                    "%02X".format(it.toInt() and 0xFF)
+                }
+                Log.d(
+                    "BrushBuddy",
+                    "NOTIFICATION uuid: ${characteristic.uuid} value: $hexValue"
+                )
             }
         }
         // Next Step: Call connectGatt
