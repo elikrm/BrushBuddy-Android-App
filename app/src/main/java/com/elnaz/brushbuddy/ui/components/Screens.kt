@@ -43,10 +43,13 @@ import androidx.compose.ui.unit.sp
 import com.elnaz.brushbuddy.Greeting
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import androidx.compose.foundation.clickable
+import com.elnaz.brushbuddy.models.BrushingStatus
 
 @Composable
-fun HomeScreen() {
-    Greeting(name = "Morning")
+fun HomeScreen(brushingStatus: BrushingStatus, brushingTimeSeconds: Int) {
+    Greeting(name = "Morning",
+        brushingStatus = brushingStatus,
+        brushingTimeSeconds = brushingTimeSeconds)
 }
 
 @Composable
