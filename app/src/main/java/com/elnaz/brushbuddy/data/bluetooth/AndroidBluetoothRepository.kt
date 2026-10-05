@@ -19,6 +19,7 @@ import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import com.elnaz.brushbuddy.models.BluetoothState
+import com.elnaz.brushbuddy.models.BrushingSessionTracker
 import com.elnaz.brushbuddy.models.BrushingStatus
 import com.elnaz.brushbuddy.models.ConnectionState
 import com.elnaz.brushbuddy.models.OralBAdvertisement
@@ -69,6 +70,8 @@ class AndroidBluetoothRepository(private val context: Context
     //read-only externally
     override val brushingStatus: StateFlow<BrushingStatus> =
         _brushingStatus.asStateFlow()
+    private val _brushingTimeSeconds = MutableStateFlow(0)
+    override val brushingTimeSeconds: StateFlow<Int> = _brushingTimeSeconds.asStateFlow()
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun loadMyPairedDevices(){
@@ -82,6 +85,7 @@ class AndroidBluetoothRepository(private val context: Context
             "Paired devices Name: ${item.name}, Address: ${item.address}, RSSI: ${item.rssi}"
         }
     }
+    private val brushingSessionTracker = BrushingSessionTracker()
     @RequiresApi(Build.VERSION_CODES.S)
     @RequiresPermission(
         allOf = [
@@ -115,6 +119,18 @@ class AndroidBluetoothRepository(private val context: Context
                     )
                     Log.d("BrushBuddy", "Brush Status is ${oralBAdvertisement.brushingStatus} " +
                     "Time is ${oralBAdvertisement.brushingTimeSeconds}")
+
+                    _brushingStatus.value = oralBAdvertisement.brushingStatus
+                    brushingSessionTracker.update(oralBAdvertisement)
+                    val newBrushingTime =
+                        brushingSessionTracker.getLiveSessionDuration().seconds.toInt()
+                    if (newBrushingTime != _brushingTimeSeconds.value){
+                        _brushingTimeSeconds.value = newBrushingTime
+                        Log.d(
+                            "BrushingSessionTracker",
+                            "Accumulated time is: ${_brushingTimeSeconds.value} seconds"
+                        )
+                    }
                 }
 
 

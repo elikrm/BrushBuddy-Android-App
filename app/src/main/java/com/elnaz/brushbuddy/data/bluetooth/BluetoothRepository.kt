@@ -16,6 +16,7 @@ interface BluetoothRepository {
     val bluetoothState: StateFlow<BluetoothState>
     val brushingStatus: StateFlow<BrushingStatus>
     val bondedDevices: StateFlow<List<BluetoothDeviceModel>>
+    val brushingTimeSeconds: StateFlow<Int>
     fun startScanning(): Flow<BluetoothDeviceModel>
     fun stopScanning()
     fun connectToDevice(device: BluetoothDeviceModel): Flow<ConnectionState>
