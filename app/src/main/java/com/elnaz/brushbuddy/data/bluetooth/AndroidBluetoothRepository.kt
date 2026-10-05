@@ -21,6 +21,7 @@ import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import com.elnaz.brushbuddy.models.BluetoothState
 import com.elnaz.brushbuddy.models.BrushingStatus
 import com.elnaz.brushbuddy.models.ConnectionState
+import com.elnaz.brushbuddy.models.OralBAdvertisement
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,6 +104,19 @@ class AndroidBluetoothRepository(private val context: Context
                     result.device.toBluetoothDeviceModel(
                         rssi = result.rssi
                     )
+                val manufacturerData = result.scanRecord?.manufacturerSpecificData?.get(220)
+                if(manufacturerData !=null){
+                    val oralBAdvertisement = OralBAdvertisement(manufacturerData)
+                    val hexData = manufacturerData.joinToString(" ") {
+                        "%02X".format(it.toInt() and 0xFF)  }
+                    Log.d(
+                        "BrushBuddy",
+                        "Manufacturer data: $hexData"
+                    )
+                    Log.d("BrushBuddy", "Brush Status is ${oralBAdvertisement.brushingStatus} " +
+                    "Time is ${oralBAdvertisement.brushingTimeSeconds}")
+                }
+
 
                 Log.d(
                     "BrushBuddy",
