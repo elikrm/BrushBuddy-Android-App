@@ -216,7 +216,7 @@ class AndroidBluetoothRepository(private val context: Context
         )
 
         val callback = object : ScanCallback() {
-
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onScanResult(
                 callbackType: Int,
                 result: ScanResult

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "507814198023",
+    "firebase_url": "https://brushbuddy-6d138-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "brushbuddy-6d138",
+    "storage_bucket": "brushbuddy-6d138.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:507814198023:android:2635a02738a8ff5073a3a2",
+        "android_client_info": {
+          "package_name": "com.elnaz.brushbuddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7xh93xV4302eLEmZAynqYTkHov4BnOQM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
