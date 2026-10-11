@@ -2,6 +2,7 @@ package com.elnaz.brushbuddy.utils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.elnaz.brushbuddy.models.BottomNavItem
+import androidx.compose.material.icons.filled.Bluetooth
 
 object Constants {
     val BottomNavItems = listOf(
@@ -16,6 +17,11 @@ object Constants {
             label = "History",
             icon = Icons.Filled.History,
             route = "history"
+        ),
+        BottomNavItem(
+            label = "Devices",
+            icon = Icons.Default.Bluetooth,
+            route = "devices"
         ),
         // Profile screen
         BottomNavItem(

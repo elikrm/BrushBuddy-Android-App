@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -56,6 +61,7 @@ import androidx.navigation.compose.rememberNavController
 import com.elnaz.brushbuddy.data.bluetooth.AndroidBluetoothRepository
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import com.elnaz.brushbuddy.models.BrushingStatus
+import com.elnaz.brushbuddy.ui.components.DevicesScreen
 import com.elnaz.brushbuddy.ui.components.HistoryScreen
 import com.elnaz.brushbuddy.ui.components.HomeScreen
 import com.elnaz.brushbuddy.ui.components.ProfileScreen
@@ -204,12 +210,16 @@ fun NavHostContainer(
             HistoryScreen()
         }
 
-        composable("profile") {
-            ProfileScreen(deviceList,
+        composable("devices") {
+            DevicesScreen(deviceList,
                 scannedDeviceList,
                 onStartScanning,
                 onStopScanning,
                 onDeviceSelected)
+        }
+        // Profile screen: user settings and preferences
+        composable("profile") {
+            ProfileScreen()
         }
     }
 }
@@ -218,8 +228,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 
     NavigationBar(
         // set background color
-        containerColor = Color.White,
-        modifier = Modifier.height(64.dp)
+        containerColor = Color.White
     ) {
         // observe the backstack
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -235,7 +244,18 @@ fun BottomNavigationBar(navController: NavHostController) {
                 selected = currentRoute == navItem.route,
                 // navigate on click
                 onClick = {
-                    navController.navigate(navItem.route)
+                    // Previous navigation behaved like a stack (LIFO).
+                    // Each navigate() call pushed a new screen onto the back stack,
+                    // even if that screen was already visited.
+                    // This could create duplicate screens when switching tabs.
+                    //navController.navigate(navItem.route)
+                    navController.navigate(navItem.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
                 // Icon of navItem
                 icon = {
@@ -245,7 +265,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 label = {
                     Text(text = navItem.label)
                 },
-                alwaysShowLabel = false,
+                alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color(0xFF0066FF), // Icon color when selected
                     unselectedIconColor = Color.Gray, // Icon color when not selected
@@ -328,26 +348,28 @@ fun Greeting(name: String,
             .background(Color(0xFFFFD9DF)) // Capital 'P' for Pink
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
-            .clickable { /* Action */ }
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-        )
-        {
-            Text("Good $name!",
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Good $name!",
                 color = Color.Blue,
-                fontSize = 25.sp  )
-            Spacer(modifier = Modifier.width(30.dp)) // Space between row elements
+                fontSize = 25.sp
+            )
+
             Image(
                 painter = painterResource(id = R.drawable.smiley_tooth),
                 contentDescription = "Smiley Tooth Face",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(100.dp)
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Let's keep your smile healthy",
             color = Color.Blue,
-            fontSize = 25.sp )
+            fontSize = 18.sp )
         Spacer(modifier = Modifier.height(10.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -360,32 +382,76 @@ fun Greeting(name: String,
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(16.dp)
             )
             {
                 Text(text = "Today's goal",
                     color = Color.Blue,
-                    fontSize = 25.sp )
+                    fontSize = 20.sp )
                 Text(text = "Brush at least 2 times",
                     color = Color.Blue,
-                    fontSize = 25.sp )
+                    fontSize = 16.sp )
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Morning\nDone!",
-                        color = Color.DarkGray,
-                        fontSize = 18.sp,
-                        maxLines = 2,
+                    Column(
                         modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp)) // Space between row elements
-                    // Second item inside the row
-                    Text(
-                        text = "Evening\nNot yet",
-                        color = Color.Black,
-                        fontSize = 18.sp
-                    )
+                    ) {
+                        Text(
+                            text = "Morning",
+                            color = Color.DarkGray,
+                            fontSize = 16.sp
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(
+                                text = "Done!",
+                                color = Color.DarkGray,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Evening",
+                            color = Color.DarkGray,
+                            fontSize = 16.sp
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(
+                                text = "Not yet",
+                                color = Color.DarkGray,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -402,39 +468,71 @@ fun Greeting(name: String,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
-            )
-            {
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth()
-                )
-                {
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.brush),
                         contentDescription = "Brush Image",
-                        modifier = Modifier.size(50.dp)
+                        modifier = Modifier.size(80.dp)
                     )
-                    Spacer(modifier = Modifier.width(16.dp)) // Space between row elements
-                    Text(
-                        text = " $brushingStatus Time: $brushingTimeSeconds  s",
-                        color = Color.DarkGray,
-                        fontSize = 18.sp,
-                        maxLines = 2,
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(
                         modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    ) {
+                        Text(
+                            text = when (brushingStatus) {
+                                BrushingStatus.BRUSHING -> "Brushing in progress"
+                                else -> "Ready to brush"
+                            },
+                            color = Color.DarkGray,
+                            fontSize = 18.sp
+                        )
+
+                        val minutes = brushingTimeSeconds / 60
+                        val seconds = brushingTimeSeconds % 60
+
+                        Text(
+                            text = "%02d:%02d".format(minutes, seconds),
+                            color = Color.DarkGray,
+                            fontSize = 24.sp
+                        )
+                    }
                 }
+
                 Spacer(modifier = Modifier.height(12.dp))
-                // Progress Bar (elapsed / max seconds), capped at 1.0 (100%)
-                val progress = (brushingTimeSeconds  / 30f).coerceAtMost(1.0f)
+
+                // Progress towards the minimum 30-second brushing session
+                val progress = (brushingTimeSeconds / 30f).coerceIn(0f, 1f)
+
                 LinearProgressIndicator(
-                    progress = { progress }, // 0.5f represents 50% progress (1 out of 2 completed)
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF4CAF50), // Green filled track for success
-                    trackColor = Color(0xFFE0E0E0), // Light gray background track
+                    color = Color(0xFF4CAF50),
+                    trackColor = Color(0xFFE0E0E0)
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Message based on real Bluetooth brushing status
+                val messageToUser = when {
+                    brushingStatus == BrushingStatus.BRUSHING &&
+                            brushingTimeSeconds >= 30 ->
+                        "Great job! Keep brushing!"
+
+                    brushingStatus == BrushingStatus.BRUSHING ->
+                        "Keep going!"
+
+                    else ->
+                        "Ready to brush"
+                }
+
                 Text(
-                    text = "$messageToUser.",
+                    text = messageToUser,
                     color = Color.Black,
                     fontSize = 18.sp
                 )
@@ -452,52 +550,69 @@ fun Greeting(name: String,
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
-            )
-            {
+                    .padding(16.dp)
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth()
-                )
-                {
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Card(
                         modifier = Modifier.weight(1f),
-                        // Customize corner roundness (e.g., 12.dp)
                         shape = RoundedCornerShape(12.dp),
-                        // Set the card background to white so it stands out against the pink
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
-                    )
-                    {
-                        Image(
-                            painter = painterResource(id = R.drawable.streak),
-                            contentDescription = "Streak Image",
-                            modifier = Modifier.size(50.dp),
-                            contentScale = ContentScale.Fit
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFC0CB)
                         )
-                        Text(
-                            text = "Day streak",
-                            color = Color.Black,
-                            fontSize = 18.sp
-                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.streak),
+                                contentDescription = "Streak Image",
+                                modifier = Modifier.size(50.dp),
+                                contentScale = ContentScale.Fit
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Day streak",
+                                color = Color.Black,
+                                fontSize = 18.sp
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.width(16.dp)) // Space between two cards
+
                     Card(
                         modifier = Modifier.weight(1f),
-                        // Customize corner roundness (e.g., 12.dp)
                         shape = RoundedCornerShape(12.dp),
-                        // Set the card background to white so it stands out against the pink
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
-                    )
-                    {
-                        Image(
-                            painter = painterResource(id = R.drawable.star),
-                            contentDescription = "Star Icon",
-                            modifier = Modifier.size(50.dp)
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFC0CB)
                         )
-                        Text(
-                            text = "Total brushes",
-                            color = Color.Black,
-                            fontSize = 18.sp
-                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.star),
+                                contentDescription = "Star Icon",
+                                modifier = Modifier.size(50.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Total brushes",
+                                color = Color.Black,
+                                fontSize = 18.sp
+                            )
+                        }
                     }
                 }
             }
@@ -514,25 +629,23 @@ fun Greeting(name: String,
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(16.dp)
             )
             {
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 )
                 {
                     Image(
                         painter = painterResource(id = R.drawable.heart),
                         contentDescription = "Heart",
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clickable
-                            {
-                                heartPress()
-                            }
+                        modifier = Modifier.size(50.dp)
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
+
                     Text(
-                        text = " A cleaner smile brighter days!",
+                        text = "A cleaner smile brighter days!",
                         color = Color.Black,
                         fontSize = 18.sp
                     )
