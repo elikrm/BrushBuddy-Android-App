@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import com.elnaz.brushbuddy.models.BluetoothState
 import com.elnaz.brushbuddy.models.BrushingSessionTracker
+import com.elnaz.brushbuddy.models.BrushingStateEnum
 import com.elnaz.brushbuddy.models.BrushingStatus
 import com.elnaz.brushbuddy.models.ConnectionState
 import com.elnaz.brushbuddy.models.OralBAdvertisement
@@ -73,6 +74,11 @@ class AndroidBluetoothRepository(private val context: Context
     private val _brushingTimeSeconds = MutableStateFlow(0)
     override val brushingTimeSeconds: StateFlow<Int> = _brushingTimeSeconds.asStateFlow()
 
+    private val _brushingState =
+        MutableStateFlow(BrushingStateEnum.NOT_BRUSHING)
+
+    override val brushingState: StateFlow<BrushingStateEnum> =
+        _brushingState
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun loadMyPairedDevices(){
         val devices = bluetoothAdapter.bondedDevices.map { bluetoothDevice ->
@@ -122,6 +128,8 @@ class AndroidBluetoothRepository(private val context: Context
 
                     _brushingStatus.value = oralBAdvertisement.brushingStatus
                     brushingSessionTracker.update(oralBAdvertisement)
+                    brushingSessionTracker.checkState()
+                    _brushingState.value = brushingSessionTracker.brushingState
                     val newBrushingTime =
                         brushingSessionTracker.getLiveSessionDuration().seconds.toInt()
                     if (newBrushingTime != _brushingTimeSeconds.value){

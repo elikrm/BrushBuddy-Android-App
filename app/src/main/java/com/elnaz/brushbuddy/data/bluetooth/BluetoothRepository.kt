@@ -1,6 +1,7 @@
 package com.elnaz.brushbuddy.data.bluetooth
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import com.elnaz.brushbuddy.models.BluetoothState
+import com.elnaz.brushbuddy.models.BrushingStateEnum
 import com.elnaz.brushbuddy.models.BrushingStatus
 import com.elnaz.brushbuddy.models.ConnectionState
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface BluetoothRepository {
     val bluetoothState: StateFlow<BluetoothState>
     val brushingStatus: StateFlow<BrushingStatus>
+    val brushingState: StateFlow<BrushingStateEnum>
     val bondedDevices: StateFlow<List<BluetoothDeviceModel>>
     val brushingTimeSeconds: StateFlow<Int>
     fun startScanning(): Flow<BluetoothDeviceModel>

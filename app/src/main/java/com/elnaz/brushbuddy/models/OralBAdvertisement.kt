@@ -1,7 +1,5 @@
 package com.elnaz.brushbuddy.models
 
-import kotlinx.serialization.descriptors.SerialDescriptor
-
 enum class Models{
     D36,
     D701,

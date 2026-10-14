@@ -39,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +74,7 @@ import kotlinx.coroutines.launch
 import com.elnaz.brushbuddy.ui.components.WeeklyStreakCard
 import com.elnaz.brushbuddy.ui.screens.BrushingScreen
 import com.elnaz.brushbuddy.ui.components.BrushNowButton
+import com.elnaz.brushbuddy.models.BrushingStateEnum
 
 class MainActivity : ComponentActivity() {
     private var scanJob: Job? = null
@@ -116,6 +118,7 @@ class MainActivity : ComponentActivity() {
             val scannedDeviceList by bluetoothRepository.scannedDevices.collectAsStateWithLifecycle()
             val brushingStatus by bluetoothRepository.brushingStatus.collectAsStateWithLifecycle()
             val brushingTimeSeconds by bluetoothRepository.brushingTimeSeconds.collectAsStateWithLifecycle()
+            val brushingState by bluetoothRepository.brushingState.collectAsState()
             BrushBuddyTheme {
                 val navController = rememberNavController()
                 var previousBrushingStatus by remember {
@@ -187,13 +190,13 @@ class MainActivity : ComponentActivity() {
                         },
                         brushingStatus,
                         brushingTimeSeconds,
+                        brushingState,
                     )
                 }
             }
         }
     }
 }
-
 @Composable
 fun NavHostContainer(
     navController: NavHostController,
@@ -205,6 +208,7 @@ fun NavHostContainer(
     onDeviceSelected: (BluetoothDeviceModel) -> Unit,
     brushingStatus: BrushingStatus,
     brushingTimeSeconds: Int,
+    brushingState: BrushingStateEnum,
 ) {
     NavHost(
         navController = navController,
@@ -222,7 +226,9 @@ fun NavHostContainer(
         }
         composable("brushing") {
             BrushingScreen(
-                brushingTimeSeconds = brushingTimeSeconds
+                brushingStatus = brushingStatus,
+                brushingTimeSeconds = brushingTimeSeconds,
+                brushingState = brushingState
             )
         }
 
@@ -295,12 +301,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         }
     }
 }
-enum class BrushingStateEnum {
-    NOT_BRUSHING,
-    BRUSHING,
-    ABORTED_SESSION,
-    CONFIRMED_SESSION,
-}
+
 @Composable
 fun Greeting(name: String,
              brushingStatus: BrushingStatus,
@@ -308,59 +309,6 @@ fun Greeting(name: String,
              onBrushNowClick: () -> Unit = {},
              modifier: Modifier = Modifier) {
     // the state variable at the top of Composable
-    var brushingState by remember {
-        mutableStateOf(BrushingStateEnum.NOT_BRUSHING)
-    }
-    val messageToUser = remember(brushingState)
-    {
-        when (brushingState) {
-            BrushingStateEnum.NOT_BRUSHING -> {"Ready to brush"}
-            BrushingStateEnum.BRUSHING ->{"Keep going! You need at least 30 seconds"}
-            BrushingStateEnum.CONFIRMED_SESSION -> {"Great job!"}
-            BrushingStateEnum.ABORTED_SESSION -> {"Session too short"}
-        }
-    }
-    var elapsedSeconds by remember {
-        mutableStateOf(0)
-    }
-    fun heartPress() {
-        /*
-        * NOT_BRUSHING       → BRUSHING
-        * BRUSHING           → check elapsed time
-        * ABORTED_SESSION    → NOT_BRUSHING
-        * CONFIRMED_SESSION  → NOT_BRUSHING */
-        brushingState = when(brushingState) {
-            BrushingStateEnum.NOT_BRUSHING -> {BrushingStateEnum.BRUSHING}
-            BrushingStateEnum.BRUSHING -> {
-                if (elapsedSeconds < 10) { BrushingStateEnum.ABORTED_SESSION }
-                else { BrushingStateEnum.CONFIRMED_SESSION } }
-            BrushingStateEnum.ABORTED_SESSION -> { BrushingStateEnum.ABORTED_SESSION }
-            BrushingStateEnum.CONFIRMED_SESSION -> { BrushingStateEnum.CONFIRMED_SESSION }
-        }
-    }
-    LaunchedEffect(brushingState) {
-        when (brushingState) {
-
-            BrushingStateEnum.BRUSHING -> {
-                elapsedSeconds = 0
-
-                while (true) {
-                    delay(1000)
-                    elapsedSeconds++
-                }
-            }
-
-            BrushingStateEnum.ABORTED_SESSION,
-            BrushingStateEnum.CONFIRMED_SESSION -> {
-                delay(1000)
-                brushingState = BrushingStateEnum.NOT_BRUSHING
-            }
-
-            BrushingStateEnum.NOT_BRUSHING -> {
-                // Nothing to do
-            }
-        }
-    }
 
     Column(
         modifier = modifier
