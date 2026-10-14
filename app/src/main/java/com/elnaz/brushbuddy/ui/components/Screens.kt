@@ -56,11 +56,24 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import com.elnaz.brushbuddy.R
 
+// BrushMint-inspired palette
+private val AppBackground = Color(0xFFF3FCF9)
+private val CardBackground = Color(0xFFFFFFFF)
+private val PrimaryMint = Color(0xFF00C9A7)
+private val SecondaryBlue = Color(0xFF168FE5)
+private val SoftMint = Color(0xFFD9F8EF)
+private val HeadingText = Color(0xFF191B2C)
+private val SecondaryText = Color(0xFF596170)
+private val CardBorder = Color(0xFFE0E5EB)
+
 @Composable
-fun HomeScreen(brushingStatus: BrushingStatus, brushingTimeSeconds: Int) {
+fun HomeScreen(brushingStatus: BrushingStatus,
+               brushingTimeSeconds: Int,
+               onBrushNowClick: () -> Unit ) {
     Greeting(name = "Morning",
         brushingStatus = brushingStatus,
-        brushingTimeSeconds = brushingTimeSeconds)
+        brushingTimeSeconds = brushingTimeSeconds,
+        onBrushNowClick = onBrushNowClick)
 }
 
 @Composable
@@ -68,7 +81,7 @@ fun HistoryScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(CardBackground),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -76,10 +89,10 @@ fun HistoryScreen() {
         Icon(
             imageVector = Icons.Default.History,
             contentDescription = "history",
-            tint = Color(0xFF0F9D58)
+            tint = PrimaryMint
         )
         // Text on the screen
-        Text(text = "History", color = Color.Black)
+        Text(text = "History", color = HeadingText)
     }
 }
 @Composable
@@ -87,19 +100,19 @@ fun ProfileScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(CardBackground),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = "Profile",
-            tint = Color(0xFF0F9D58)
+            tint = PrimaryMint
         )
 
         Text(
             text = "Profile",
-            color = Color.Black
+            color = HeadingText
         )
     }
 }
@@ -115,7 +128,7 @@ fun DevicesScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFE0E9))
+            .background(AppBackground)
     ) {
         // Background bubbles
         BubbleBackground()
@@ -142,7 +155,7 @@ fun DevicesScreen(
             Icon(
                 imageVector = Icons.Default.Bluetooth,
                 contentDescription = "Bluetooth",
-                tint = Color(0xFF7D2855),
+                tint = HeadingText,
                 modifier = Modifier.size(32.dp)
             )
 
@@ -150,13 +163,13 @@ fun DevicesScreen(
                 text = "My Devices",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF7D2855)
+                color = HeadingText
             )
 
             Text(
                 text = "Manage your Bluetooth toothbrush",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF75656D)
+                color = SecondaryText
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -166,8 +179,9 @@ fun DevicesScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFF0F5)
+                    containerColor = CardBackground
                 ),
+                border = BorderStroke(1.dp, CardBorder),
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 0.dp
                 )
@@ -179,7 +193,7 @@ fun DevicesScreen(
                         text = "Paired Devices",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF7D2855)
+                        color = HeadingText
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -187,7 +201,7 @@ fun DevicesScreen(
                     Text(
                         text = "Devices already paired with your phone",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF75656D)
+                        color = SecondaryText
                     )
                 }
             }
@@ -199,7 +213,7 @@ fun DevicesScreen(
                 Text(
                     text = "No paired devices found.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF75656D)
+                    color = SecondaryText
                 )
             } else {
                 LazyColumn(
@@ -225,7 +239,7 @@ fun DevicesScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF64A5F7),
+                    containerColor = PrimaryMint,
                     contentColor = Color.White
                 )
             ) {
@@ -250,7 +264,7 @@ fun DevicesScreen(
                 text = "Scanned Devices:",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF7D2855)
+                color = HeadingText
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -266,7 +280,7 @@ fun DevicesScreen(
                     text = "No scanned devices found.",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7D2855)
+                    color = HeadingText
                 )
             } else {
                 LazyColumn(
@@ -291,7 +305,7 @@ fun DevicesScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF64A5F7),
+                    containerColor = PrimaryMint,
                     contentColor = Color.White
                 )
             ) {
@@ -325,8 +339,9 @@ fun DeviceItem(device: BluetoothDeviceModel,
                 onDeviceSelected(device)
             },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFF5F8)
+            containerColor = CardBackground
         ),
+        border = BorderStroke(1.dp, CardBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -337,13 +352,13 @@ fun DeviceItem(device: BluetoothDeviceModel,
                 text = device.name ?: "Unknown Device",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF7D2855)
+                color = HeadingText
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = device.address, // MAC Address
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF75656D)
+                color = SecondaryText
             )
         }
     }

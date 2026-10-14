@@ -26,13 +26,13 @@ fun BubbleBackground(
 
         bubbles.forEach { (x, y, radius) ->
             drawCircle(
-                color = Color.White.copy(alpha = 0.35f),
+                color = Color(0xFF00C9A7).copy(alpha = 0.30f),
                 radius = radius.dp.toPx(),
                 center = Offset(
                     x = size.width * x,
                     y = size.height * y
                 ),
-                style = Stroke(width = 2.dp.toPx())
+                style = Stroke(width = 3.dp.toPx())
             )
         }
     }

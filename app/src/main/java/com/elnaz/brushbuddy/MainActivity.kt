@@ -70,6 +70,9 @@ import com.elnaz.brushbuddy.utils.Constants
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.elnaz.brushbuddy.ui.components.WeeklyStreakCard
+import com.elnaz.brushbuddy.ui.screens.BrushingScreen
+import com.elnaz.brushbuddy.ui.components.BrushNowButton
 
 class MainActivity : ComponentActivity() {
     private var scanJob: Job? = null
@@ -115,18 +118,27 @@ class MainActivity : ComponentActivity() {
             val brushingTimeSeconds by bluetoothRepository.brushingTimeSeconds.collectAsStateWithLifecycle()
             BrushBuddyTheme {
                 val navController = rememberNavController()
+                var previousBrushingStatus by remember {
+                    mutableStateOf(brushingStatus)
+                }
+                LaunchedEffect(brushingStatus) {
+                    if (
+                        previousBrushingStatus != BrushingStatus.BRUSHING &&
+                        brushingStatus == BrushingStatus.BRUSHING
+                    ) {
+                        navController.navigate("brushing") {
+                            launchSingleTop = true
+                        }
+                    }
+
+                    previousBrushingStatus = brushingStatus
+                }
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
                         BottomNavigationBar(navController = navController)
                     }
                 )
-//                { innerPadding ->
-//                    Greeting(
-//                        name = "Morning",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
                 { innerPadding ->
                     NavHostContainer(
                         navController = navController,
@@ -202,6 +214,14 @@ fun NavHostContainer(
         composable("home") {
             HomeScreen(
                 brushingStatus = brushingStatus,
+                brushingTimeSeconds = brushingTimeSeconds,
+                onBrushNowClick = {
+                    navController.navigate("brushing")
+                }
+            )
+        }
+        composable("brushing") {
+            BrushingScreen(
                 brushingTimeSeconds = brushingTimeSeconds
             )
         }
@@ -251,10 +271,9 @@ fun BottomNavigationBar(navController: NavHostController) {
                     //navController.navigate(navItem.route)
                     navController.navigate(navItem.route) {
                         popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                            inclusive = false
                         }
                         launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 // Icon of navItem
@@ -267,10 +286,10 @@ fun BottomNavigationBar(navController: NavHostController) {
                 },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF0066FF), // Icon color when selected
-                    unselectedIconColor = Color.Gray, // Icon color when not selected
-                    selectedTextColor = Color(0xFF0066FF), // Label color when selected
-                    indicatorColor = Color(0xFFFFD9DF) // Highlight color for selected item
+                    selectedIconColor = Color(0xFF00C9A7),
+                    unselectedIconColor = Color(0xFF596170),
+                    selectedTextColor = Color(0xFF00C9A7),
+                    indicatorColor = Color(0xFFD9F8EF)
                 )
             )
         }
@@ -286,6 +305,7 @@ enum class BrushingStateEnum {
 fun Greeting(name: String,
              brushingStatus: BrushingStatus,
              brushingTimeSeconds: Int,
+             onBrushNowClick: () -> Unit = {},
              modifier: Modifier = Modifier) {
     // the state variable at the top of Composable
     var brushingState by remember {
@@ -344,10 +364,10 @@ fun Greeting(name: String,
 
     Column(
         modifier = modifier
-            .fillMaxWidth()
-            .background(Color(0xFFFFD9DF)) // Capital 'P' for Pink
+            .fillMaxSize()
+            .background(Color(0xFFF3FCF9))
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -356,40 +376,39 @@ fun Greeting(name: String,
         ) {
             Text(
                 text = "Good $name!",
-                color = Color.Blue,
+                color = Color(0xFF191B2C),
                 fontSize = 25.sp
             )
 
             Image(
                 painter = painterResource(id = R.drawable.smiley_tooth),
                 contentDescription = "Smiley Tooth Face",
-                modifier = Modifier.size(100.dp)
+                modifier = Modifier.size(64.dp)
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(text = "Let's keep your smile healthy",
-            color = Color.Blue,
+            color = Color(0xFF191B2C),
             fontSize = 18.sp )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
             // Customize corner roundness (e.g., 12.dp)
             shape = RoundedCornerShape(12.dp),
-            // Set the card background to white so it stands out against the pink
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
-        )
+            colors = CardDefaults.cardColors(containerColor = Color.White
+        ))
         {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(12.dp)
             )
             {
                 Text(text = "Today's goal",
-                    color = Color.Blue,
+                    color = Color(0xFF191B2C),
                     fontSize = 20.sp )
                 Text(text = "Brush at least 2 times",
-                    color = Color.Blue,
+                    color = Color(0xFF191B2C),
                     fontSize = 16.sp )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -400,7 +419,7 @@ fun Greeting(name: String,
                     ) {
                         Text(
                             text = "Morning",
-                            color = Color.DarkGray,
+                            color = Color(0xFF596170),
                             fontSize = 16.sp
                         )
 
@@ -410,7 +429,7 @@ fun Greeting(name: String,
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                tint = Color(0xFF4CAF50),
+                                tint = Color(0xFF00C9A7),
                                 modifier = Modifier.size(18.dp)
                             )
 
@@ -418,7 +437,7 @@ fun Greeting(name: String,
 
                             Text(
                                 text = "Done!",
-                                color = Color.DarkGray,
+                                color = Color(0xFF596170),
                                 fontSize = 16.sp
                             )
                         }
@@ -429,7 +448,7 @@ fun Greeting(name: String,
                     ) {
                         Text(
                             text = "Evening",
-                            color = Color.DarkGray,
+                            color = Color(0xFF596170),
                             fontSize = 16.sp
                         )
 
@@ -447,7 +466,7 @@ fun Greeting(name: String,
 
                             Text(
                                 text = "Not yet",
-                                color = Color.DarkGray,
+                                color = Color(0xFF596170),
                                 fontSize = 16.sp
                             )
                         }
@@ -455,181 +474,53 @@ fun Greeting(name: String,
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp)) // Space between two cards
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            // Customize corner roundness (e.g., 12.dp)
-            shape = RoundedCornerShape(12.dp),
-            // Set the card background to white so it stands out against the pink
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
+        Spacer(modifier = Modifier.height(8.dp)) // Space between two cards
+        BrushNowButton(
+            onClick = onBrushNowClick
         )
-        {
-            Column(
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Weekly streak card
+            WeeklyStreakCard()
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.brush),
-                        contentDescription = "Brush Image",
-                        modifier = Modifier.size(80.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = when (brushingStatus) {
-                                BrushingStatus.BRUSHING -> "Brushing in progress"
-                                else -> "Ready to brush"
-                            },
-                            color = Color.DarkGray,
-                            fontSize = 18.sp
-                        )
-
-                        val minutes = brushingTimeSeconds / 60
-                        val seconds = brushingTimeSeconds % 60
-
-                        Text(
-                            text = "%02d:%02d".format(minutes, seconds),
-                            color = Color.DarkGray,
-                            fontSize = 24.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Progress towards the minimum 30-second brushing session
-                val progress = (brushingTimeSeconds / 30f).coerceIn(0f, 1f)
-
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF4CAF50),
-                    trackColor = Color(0xFFE0E0E0)
+                Image(
+                    painter = painterResource(id = R.drawable.star),
+                    contentDescription = "Star Icon",
+                    modifier = Modifier.size(20.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Message based on real Bluetooth brushing status
-                val messageToUser = when {
-                    brushingStatus == BrushingStatus.BRUSHING &&
-                            brushingTimeSeconds >= 30 ->
-                        "Great job! Keep brushing!"
-
-                    brushingStatus == BrushingStatus.BRUSHING ->
-                        "Keep going!"
-
-                    else ->
-                        "Ready to brush"
-                }
+                Spacer(modifier = Modifier.width(6.dp))
 
                 Text(
-                    text = messageToUser,
-                    color = Color.Black,
-                    fontSize = 18.sp
+                    text = "Total brushes",
+                    color = Color(0xFF191B2C),
+                    fontSize = 14.sp
                 )
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Spacer(modifier = Modifier.height(8.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
             // Customize corner roundness (e.g., 12.dp)
             shape = RoundedCornerShape(12.dp),
-            // Set the card background to white so it stands out against the pink
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
-        )
+            colors = CardDefaults.cardColors(containerColor = Color.White
+        ))
         {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFC0CB)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.streak),
-                                contentDescription = "Streak Image",
-                                modifier = Modifier.size(50.dp),
-                                contentScale = ContentScale.Fit
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Day streak",
-                                color = Color.Black,
-                                fontSize = 18.sp
-                            )
-                        }
-                    }
-
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFC0CB)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.star),
-                                contentDescription = "Star Icon",
-                                modifier = Modifier.size(50.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Total brushes",
-                                color = Color.Black,
-                                fontSize = 18.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            // Customize corner roundness (e.g., 12.dp)
-            shape = RoundedCornerShape(12.dp),
-            // Set the card background to white so it stands out against the pink
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC0CB))
-        )
-        {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(8.dp)
             )
             {
                 Row(
@@ -646,7 +537,7 @@ fun Greeting(name: String,
 
                     Text(
                         text = "A cleaner smile brighter days!",
-                        color = Color.Black,
+                        color = Color(0xFF191B2C),
                         fontSize = 18.sp
                     )
                 }
