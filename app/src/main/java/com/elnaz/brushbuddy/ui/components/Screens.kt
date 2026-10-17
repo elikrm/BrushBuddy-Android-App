@@ -69,10 +69,12 @@ private val CardBorder = Color(0xFFE0E5EB)
 @Composable
 fun HomeScreen(brushingStatus: BrushingStatus,
                brushingTimeSeconds: Int,
+               totalBrushes: Int,
                onBrushNowClick: () -> Unit ) {
     Greeting(name = "Morning",
         brushingStatus = brushingStatus,
         brushingTimeSeconds = brushingTimeSeconds,
+        totalBrushes  = totalBrushes,
         onBrushNowClick = onBrushNowClick)
 }
 

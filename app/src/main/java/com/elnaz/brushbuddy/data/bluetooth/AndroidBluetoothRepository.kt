@@ -33,6 +33,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import java.util.LinkedList
 import java.util.Queue
 import java.util.UUID
+import com.elnaz.brushbuddy.data.local.BrushingSession
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 
 //MutableStateFlow -> repository can change the value
@@ -79,6 +82,10 @@ class AndroidBluetoothRepository(private val context: Context
 
     override val brushingState: StateFlow<BrushingStateEnum> =
         _brushingState
+    private val _confirmedSessions =
+        MutableSharedFlow<BrushingSession>(extraBufferCapacity = 1)
+
+    val confirmedSessions = _confirmedSessions.asSharedFlow()
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun loadMyPairedDevices(){
         val devices = bluetoothAdapter.bondedDevices.map { bluetoothDevice ->
@@ -128,7 +135,22 @@ class AndroidBluetoothRepository(private val context: Context
 
                     _brushingStatus.value = oralBAdvertisement.brushingStatus
                     brushingSessionTracker.update(oralBAdvertisement)
-                    brushingSessionTracker.checkState()
+                    val sessionConfirmed = brushingSessionTracker.checkState()
+                    if (sessionConfirmed) {
+                        val startTime = brushingSessionTracker.firstBrushingTime
+                        if(startTime != null) {
+                            val session = BrushingSession(
+                                startTime = startTime.toEpochMilli(),
+                                durationSeconds =  brushingSessionTracker.accumulatedDuration.seconds.toInt()
+                            )
+                            _confirmedSessions.tryEmit(session)
+
+                            Log.d(
+                                "BrushBuddy",
+                                "New confirmed session: ${brushingSessionTracker.accumulatedDuration.seconds} seconds"
+                            )
+                        }
+                    }
                     _brushingState.value = brushingSessionTracker.brushingState
                     val newBrushingTime =
                         brushingSessionTracker.getLiveSessionDuration().seconds.toInt()

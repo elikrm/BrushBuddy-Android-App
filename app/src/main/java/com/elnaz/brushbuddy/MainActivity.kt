@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,6 +76,11 @@ import com.elnaz.brushbuddy.ui.components.WeeklyStreakCard
 import com.elnaz.brushbuddy.ui.screens.BrushingScreen
 import com.elnaz.brushbuddy.ui.components.BrushNowButton
 import com.elnaz.brushbuddy.models.BrushingStateEnum
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.elnaz.brushbuddy.data.local.BrushBuddyDatabase
+import com.elnaz.brushbuddy.data.local.BrushingSessionRepository
+import com.elnaz.brushbuddy.ui.viewmodel.BrushingViewModel
 
 class MainActivity : ComponentActivity() {
     private var scanJob: Job? = null
@@ -82,6 +88,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         bluetoothRepository = AndroidBluetoothRepository(this)
+        // Initialise Room and the ViewModel for saving brushing sessions
+        val database = BrushBuddyDatabase.getDatabase(applicationContext)
+        val repository = BrushingSessionRepository(database.brushingSessionDao())
+        lifecycleScope.launch {
+            repository.allSessions.collect { sessions ->
+                Log.d("BrushBuddy", "Saved sessions: ${sessions.size}")
+            }
+        }
+        val brushingViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return BrushingViewModel(repository, bluetoothRepository) as T
+                }
+            }
+        )[BrushingViewModel::class.java]
         // 1. The array of permissions based on the Android system version
         val requiredPermissions: Array<String> =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -119,6 +142,7 @@ class MainActivity : ComponentActivity() {
             val brushingStatus by bluetoothRepository.brushingStatus.collectAsStateWithLifecycle()
             val brushingTimeSeconds by bluetoothRepository.brushingTimeSeconds.collectAsStateWithLifecycle()
             val brushingState by bluetoothRepository.brushingState.collectAsState()
+            val totalBrushes by brushingViewModel.totalBrushes.collectAsStateWithLifecycle()
             BrushBuddyTheme {
                 val navController = rememberNavController()
                 var previousBrushingStatus by remember {
@@ -191,6 +215,7 @@ class MainActivity : ComponentActivity() {
                         brushingStatus,
                         brushingTimeSeconds,
                         brushingState,
+                        totalBrushes = totalBrushes
                     )
                 }
             }
@@ -209,6 +234,7 @@ fun NavHostContainer(
     brushingStatus: BrushingStatus,
     brushingTimeSeconds: Int,
     brushingState: BrushingStateEnum,
+    totalBrushes: Int
 ) {
     NavHost(
         navController = navController,
@@ -219,6 +245,7 @@ fun NavHostContainer(
             HomeScreen(
                 brushingStatus = brushingStatus,
                 brushingTimeSeconds = brushingTimeSeconds,
+                totalBrushes = totalBrushes,
                 onBrushNowClick = {
                     navController.navigate("brushing")
                 }
@@ -306,6 +333,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 fun Greeting(name: String,
              brushingStatus: BrushingStatus,
              brushingTimeSeconds: Int,
+             totalBrushes : Int,
              onBrushNowClick: () -> Unit = {},
              modifier: Modifier = Modifier) {
     // the state variable at the top of Composable
@@ -450,7 +478,7 @@ fun Greeting(name: String,
                 Spacer(modifier = Modifier.width(6.dp))
 
                 Text(
-                    text = "Total brushes",
+                    text = "Total brushes: $totalBrushes",
                     color = Color(0xFF191B2C),
                     fontSize = 14.sp
                 )
@@ -500,6 +528,8 @@ fun GreetingPreview() {
     BrushBuddyTheme {
         Greeting("Morning",
             brushingStatus = BrushingStatus.IDLE,
-            brushingTimeSeconds = 0)
+            totalBrushes = 0,
+            brushingTimeSeconds = 0,
+            onBrushNowClick = {})
     }
 }

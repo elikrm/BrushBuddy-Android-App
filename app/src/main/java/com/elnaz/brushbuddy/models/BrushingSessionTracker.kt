@@ -3,6 +3,8 @@ package com.elnaz.brushbuddy.models
 import android.util.Log
 import java.time.Duration
 import java.time.Instant
+import kotlinx.coroutines.delay
+
 
 class BrushingSessionTracker {
     var brushingState: BrushingStateEnum = BrushingStateEnum.NOT_BRUSHING
@@ -12,6 +14,8 @@ class BrushingSessionTracker {
     var previousStatus: BrushingStatus = BrushingStatus.IDLE
         private set
     var sessionStartTime: Instant? = null
+        private set
+    var firstBrushingTime: Instant? = null
         private set
     var stoppedTime: Instant? = null
         private set
@@ -112,6 +116,7 @@ class BrushingSessionTracker {
                     }
                     accumulatedDuration = Duration.ZERO
                     sessionStartTime = Instant.now()
+                    firstBrushingTime = sessionStartTime
                     stoppedTime = null
                 }
             }
@@ -139,7 +144,8 @@ class BrushingSessionTracker {
     }
 
     // Check time-based state transitions
-    fun checkState(now: Instant = Instant.now()) {
+    fun checkState(now: Instant = Instant.now()): Boolean {
+        val previousState = brushingState
         if (brushingState == BrushingStateEnum.EARLY) {
             val start = sessionStartTime
 
@@ -175,6 +181,21 @@ class BrushingSessionTracker {
                 resultStartTime = null
             }
         }
+        return previousState != BrushingStateEnum.CONFIRMED_SESSION &&
+                brushingState == BrushingStateEnum.CONFIRMED_SESSION
+    }
+    suspend fun waitForSessionConfirmation(): Boolean {
+        // Wait slightly longer than the 10-second pause rule
+        delay(10_100L)
+
+        // Check whether the session is still paused
+        if (brushingState != BrushingStateEnum.PAUSED) {
+            return false
+        }
+
+        // Let the existing state machine decide
+        // whether the session is confirmed or aborted
+        return checkState(Instant.now())
     }
     fun getLiveSessionDuration(now: Instant = Instant.now()): Duration {
         val start = sessionStartTime
