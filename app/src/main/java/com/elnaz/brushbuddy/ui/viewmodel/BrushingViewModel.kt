@@ -8,6 +8,7 @@ import com.elnaz.brushbuddy.data.bluetooth.AndroidBluetoothRepository
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 
 //Bluetooth repository publishes sessions through:
 //val confirmedSessions = _confirmedSessions.asSharedFlow()
@@ -30,14 +31,13 @@ class BrushingViewModel(
     2. Keep collecting for another 5 seconds after the last subscriber disappears.
     3. Stop collecting if nobody subscribes again during those 5 seconds.
     4. Resume collecting when the UI subscribes again.*/
-    val totalBrushes = repository.allSessions
-        .map { sessions -> sessions.size }
+
+    val allSessions: StateFlow<List<BrushingSession>> = repository.allSessions
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0
+            initialValue = emptyList()
         )
-
     fun saveConfirmedSession(
         startTime: Long,
         durationSeconds: Int

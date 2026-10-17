@@ -46,6 +46,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import com.elnaz.brushbuddy.models.BrushingStatus
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +56,10 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import com.elnaz.brushbuddy.R
+import com.elnaz.brushbuddy.data.local.BrushingSession
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // BrushMint-inspired palette
 private val AppBackground = Color(0xFFF3FCF9)
@@ -79,22 +84,154 @@ fun HomeScreen(brushingStatus: BrushingStatus,
 }
 
 @Composable
-fun HistoryScreen() {
+fun SessionCard(session: BrushingSession) {
+    // Format the timestamp (Long) into a readable date/time string
+    val dateFormatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
+    val formattedDate = dateFormatter.format(Date(session.startTime))
+
+    // Format duration into minutes and seconds (e.g., 2m 15s)
+    val minutes = session.durationSeconds / 60
+    val seconds = session.durationSeconds % 60
+    val formattedDuration = if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        // Rounded corners
+        shape = RoundedCornerShape(20.dp),
+
+        // white card background
+        colors = CardDefaults.cardColors(
+            containerColor = CardBackground
+        ),
+
+        // Light border around the card
+        border = BorderStroke(1.dp, CardBorder),
+
+        // Very small shadow
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp
+        )
+
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Row showing ID and Duration side-by-side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                // Session title
+                Text(
+                    text = "Brushing Session ${session.id}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = HeadingText
+                )
+//                Text(
+//                    text = "ID: ${session.id}",
+//                    style = MaterialTheme.typography.labelMedium,
+//                    color = MaterialTheme.colorScheme.secondary
+//                )
+                Text(
+                    text = "Duration: $formattedDuration",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryMint
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            // Start Time line
+            Text(
+                text = "Started: $formattedDate",
+                style = MaterialTheme.typography.bodyMedium,
+                color = SecondaryText
+            )
+        }
+    }
+}
+@Composable
+fun HistoryScreen(AllSessions: List<BrushingSession>) {
+    // Main vertical layout for the entire History screen
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CardBackground),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(AppBackground)
+            .padding(horizontal = 16.dp)
     ) {
+        // Space above the History icon
+        Spacer(modifier = Modifier.height(16.dp))
         // Icon on the screen
         Icon(
             imageVector = Icons.Default.History,
-            contentDescription = "history",
-            tint = PrimaryMint
+            contentDescription = "History",
+            tint = PrimaryMint,
+            modifier = Modifier
+                .size(36.dp)
+                .align(Alignment.CenterHorizontally)
         )
-        // Text on the screen
-        Text(text = "History", color = HeadingText)
+        // Space between the icon and title
+        Spacer(modifier = Modifier.height(8.dp))
+        // Screen title
+        Text(
+            text = "Brushing History",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = HeadingText,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        // Space below the title
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // The total number of sessions saved in Room
+        Text(
+            text = "${AllSessions.size} completed sessions",
+            style = MaterialTheme.typography.bodyMedium,
+            color = SecondaryText,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        // Space between the header and the session list
+        Spacer(modifier = Modifier.height(24.dp))
+        // Checking whether the database returned any sessions
+        if (AllSessions.isEmpty()) {
+            // Showing an empty-state message when there are no sessions
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f), // Occupying the remaining vertical space
+                contentAlignment = Alignment.Center
+            ) {
+
+                Text(
+                    text = "No brushing sessions yet",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = SecondaryText
+                )
+            }
+
+        } else {
+            // Displaying the saved sessions in a vertically scrolling list
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+
+                // Adding space at the bottom of the list
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                // Creating one list item for each saved brushing session
+                items(
+                    items = AllSessions,
+
+                    // Using the database ID as a stable unique key
+                    key = { session -> session.id }
+                ) { session ->
+
+                    // Displaying the current session using SessionCard
+                    SessionCard(session = session)
+                }
+            }
+        }
     }
 }
 @Composable

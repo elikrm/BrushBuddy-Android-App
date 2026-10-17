@@ -79,6 +79,7 @@ import com.elnaz.brushbuddy.models.BrushingStateEnum
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.elnaz.brushbuddy.data.local.BrushBuddyDatabase
+import com.elnaz.brushbuddy.data.local.BrushingSession
 import com.elnaz.brushbuddy.data.local.BrushingSessionRepository
 import com.elnaz.brushbuddy.ui.viewmodel.BrushingViewModel
 
@@ -142,7 +143,7 @@ class MainActivity : ComponentActivity() {
             val brushingStatus by bluetoothRepository.brushingStatus.collectAsStateWithLifecycle()
             val brushingTimeSeconds by bluetoothRepository.brushingTimeSeconds.collectAsStateWithLifecycle()
             val brushingState by bluetoothRepository.brushingState.collectAsState()
-            val totalBrushes by brushingViewModel.totalBrushes.collectAsStateWithLifecycle()
+            val allSessions by brushingViewModel.allSessions.collectAsStateWithLifecycle()
             BrushBuddyTheme {
                 val navController = rememberNavController()
                 var previousBrushingStatus by remember {
@@ -215,7 +216,7 @@ class MainActivity : ComponentActivity() {
                         brushingStatus,
                         brushingTimeSeconds,
                         brushingState,
-                        totalBrushes = totalBrushes
+                        allSessions
                     )
                 }
             }
@@ -234,7 +235,7 @@ fun NavHostContainer(
     brushingStatus: BrushingStatus,
     brushingTimeSeconds: Int,
     brushingState: BrushingStateEnum,
-    totalBrushes: Int
+    allsessions: List<BrushingSession>
 ) {
     NavHost(
         navController = navController,
@@ -245,7 +246,7 @@ fun NavHostContainer(
             HomeScreen(
                 brushingStatus = brushingStatus,
                 brushingTimeSeconds = brushingTimeSeconds,
-                totalBrushes = totalBrushes,
+                totalBrushes = allsessions.size,
                 onBrushNowClick = {
                     navController.navigate("brushing")
                 }
@@ -260,7 +261,7 @@ fun NavHostContainer(
         }
 
         composable("history") {
-            HistoryScreen()
+            HistoryScreen(allsessions)
         }
 
         composable("devices") {
