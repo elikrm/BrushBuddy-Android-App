@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.elnaz.brushbuddy.Greeting
 import com.elnaz.brushbuddy.models.BluetoothDeviceModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -50,14 +49,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.elnaz.brushbuddy.R
 import com.elnaz.brushbuddy.data.local.BrushingSession
+import com.elnaz.brushbuddy.ui.theme.BrushBuddyTheme
 import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -71,15 +79,24 @@ private val HeadingText = Color(0xFF191B2C)
 private val SecondaryText = Color(0xFF596170)
 private val CardBorder = Color(0xFFE0E5EB)
 
+fun getCurrentHour(): String {
+    val currentHour = LocalTime.now().hour
+    return when (currentHour) {
+        in 5..11 -> "morning"
+        in 12..16 -> "afternoon"
+        in 17..21 -> "evening"
+        else      -> "night"
+    }
+}
 @Composable
 fun HomeScreen(brushingStatus: BrushingStatus,
                brushingTimeSeconds: Int,
-               totalBrushes: Int,
+               allSessions: List<BrushingSession>,
                onBrushNowClick: () -> Unit ) {
-    Greeting(name = "Morning",
+    Greeting(timeOfDay = getCurrentHour(),
         brushingStatus = brushingStatus,
         brushingTimeSeconds = brushingTimeSeconds,
-        totalBrushes  = totalBrushes,
+        allSessions  = allSessions,
         onBrushNowClick = onBrushNowClick)
 }
 
@@ -500,5 +517,245 @@ fun DeviceItem(device: BluetoothDeviceModel,
                 color = SecondaryText
             )
         }
+    }
+}
+
+
+fun isMorningDoneFromDb(allSessions: List<BrushingSession>,
+                        timeOfDay: String): Boolean {
+    val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val today = dateFormatter.format(Date())
+    val hourRange = when (timeOfDay.lowercase())
+    {
+        "morning" -> 5..11
+        "evening" -> 15..21
+        else -> return false
+    }
+    return allSessions.any() { session ->
+        val sessionDate = Date(session.startTime)
+        val formattedDate = dateFormatter.format(sessionDate)
+        val calendar = Calendar.getInstance()
+        calendar.time = sessionDate
+        val sessionHour = calendar.get(Calendar.HOUR_OF_DAY)
+        formattedDate == today && sessionHour in hourRange
+    }
+}
+
+@Composable
+fun Greeting(timeOfDay: String,
+             brushingStatus: BrushingStatus,
+             brushingTimeSeconds: Int,
+             allSessions: List<BrushingSession>,
+             onBrushNowClick: () -> Unit = {},
+             modifier: Modifier = Modifier) {
+    // the state variable at the top of Composable
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF3FCF9))
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Good $timeOfDay!",
+                color = Color(0xFF191B2C),
+                fontSize = 25.sp
+            )
+
+            Image(
+                painter = painterResource(id = R.drawable.smiley_tooth),
+                contentDescription = "Smiley Tooth Face",
+                modifier = Modifier.size(64.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = "Let's keep your smile healthy",
+            color = Color(0xFF191B2C),
+            fontSize = 18.sp )
+        Spacer(modifier = Modifier.height(6.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            // Customize corner roundness (e.g., 12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White
+            ))
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            )
+            {
+                Text(text = "Today's goal",
+                    color = Color(0xFF191B2C),
+                    fontSize = 20.sp )
+                Text(text = "Brush at least 2 times",
+                    color = Color(0xFF191B2C),
+                    fontSize = 16.sp )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Morning",
+                            color = Color(0xFF596170),
+                            fontSize = 16.sp
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isMorningDoneFromDb(allSessions,
+                                        "Morning"))Icons.Default.CheckCircle
+                                else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isMorningDoneFromDb(allSessions, "Morning"))
+                                    Color(0xFF00C9A7)
+                                else
+                                    Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(
+                                text = if (isMorningDoneFromDb(allSessions,
+                                        "Morning"))"Done!" else "Not yet",
+//                                text = "Done",
+                                color = Color(0xFF596170),
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Evening",
+                            color = Color(0xFF596170),
+                            fontSize = 16.sp
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isMorningDoneFromDb(allSessions,
+                                        "Evening"))Icons.Default.CheckCircle
+                                else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isMorningDoneFromDb(allSessions, "Evening"))
+                                    Color(0xFF00C9A7)
+                                else
+                                    Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(
+                                text = if (isMorningDoneFromDb(allSessions,
+                                        "Evening"))"Done!" else "Not yet",
+                                color = Color(0xFF596170),
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp)) // Space between two cards
+        BrushNowButton(
+            onClick = onBrushNowClick
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Weekly streak card
+
+            WeeklyStreakCard(allSessions)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.star),
+                    contentDescription = "Star Icon",
+                    modifier = Modifier.size(20.dp)
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = "Total brushes: ${allSessions.size}",
+                    color = Color(0xFF191B2C),
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            // Customize corner roundness (e.g., 12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White
+            ))
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            )
+            {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                )
+                {
+                    Image(
+                        painter = painterResource(id = R.drawable.heart),
+                        contentDescription = "Heart",
+                        modifier = Modifier.size(50.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = "A cleaner smile brighter days!",
+                        color = Color(0xFF191B2C),
+                        fontSize = 18.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    BrushBuddyTheme {
+        Greeting("morning",
+            brushingStatus = BrushingStatus.IDLE,
+            allSessions = emptyList<BrushingSession>() ,
+            brushingTimeSeconds = 0,
+            onBrushNowClick = {})
     }
 }

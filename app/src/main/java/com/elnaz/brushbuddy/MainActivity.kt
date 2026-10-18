@@ -82,6 +82,10 @@ import com.elnaz.brushbuddy.data.local.BrushBuddyDatabase
 import com.elnaz.brushbuddy.data.local.BrushingSession
 import com.elnaz.brushbuddy.data.local.BrushingSessionRepository
 import com.elnaz.brushbuddy.ui.viewmodel.BrushingViewModel
+import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private var scanJob: Job? = null
@@ -235,7 +239,7 @@ fun NavHostContainer(
     brushingStatus: BrushingStatus,
     brushingTimeSeconds: Int,
     brushingState: BrushingStateEnum,
-    allsessions: List<BrushingSession>
+    allSessions: List<BrushingSession>
 ) {
     NavHost(
         navController = navController,
@@ -246,7 +250,7 @@ fun NavHostContainer(
             HomeScreen(
                 brushingStatus = brushingStatus,
                 brushingTimeSeconds = brushingTimeSeconds,
-                totalBrushes = allsessions.size,
+                allSessions = allSessions,
                 onBrushNowClick = {
                     navController.navigate("brushing")
                 }
@@ -261,7 +265,7 @@ fun NavHostContainer(
         }
 
         composable("history") {
-            HistoryScreen(allsessions)
+            HistoryScreen(allSessions)
         }
 
         composable("devices") {
@@ -327,210 +331,5 @@ fun BottomNavigationBar(navController: NavHostController) {
                 )
             )
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String,
-             brushingStatus: BrushingStatus,
-             brushingTimeSeconds: Int,
-             totalBrushes : Int,
-             onBrushNowClick: () -> Unit = {},
-             modifier: Modifier = Modifier) {
-    // the state variable at the top of Composable
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF3FCF9))
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Good $name!",
-                color = Color(0xFF191B2C),
-                fontSize = 25.sp
-            )
-
-            Image(
-                painter = painterResource(id = R.drawable.smiley_tooth),
-                contentDescription = "Smiley Tooth Face",
-                modifier = Modifier.size(64.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Let's keep your smile healthy",
-            color = Color(0xFF191B2C),
-            fontSize = 18.sp )
-        Spacer(modifier = Modifier.height(6.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            // Customize corner roundness (e.g., 12.dp)
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White
-        ))
-        {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-            )
-            {
-                Text(text = "Today's goal",
-                    color = Color(0xFF191B2C),
-                    fontSize = 20.sp )
-                Text(text = "Brush at least 2 times",
-                    color = Color(0xFF191B2C),
-                    fontSize = 16.sp )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Morning",
-                            color = Color(0xFF596170),
-                            fontSize = 16.sp
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF00C9A7),
-                                modifier = Modifier.size(18.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            Text(
-                                text = "Done!",
-                                color = Color(0xFF596170),
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Evening",
-                            color = Color(0xFF596170),
-                            fontSize = 16.sp
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.RadioButtonUnchecked,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(18.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            Text(
-                                text = "Not yet",
-                                color = Color(0xFF596170),
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp)) // Space between two cards
-        BrushNowButton(
-            onClick = onBrushNowClick
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // Weekly streak card
-            WeeklyStreakCard()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.star),
-                    contentDescription = "Star Icon",
-                    modifier = Modifier.size(20.dp)
-                )
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                Text(
-                    text = "Total brushes: $totalBrushes",
-                    color = Color(0xFF191B2C),
-                    fontSize = 14.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            // Customize corner roundness (e.g., 12.dp)
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White
-        ))
-        {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            )
-            {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                )
-                {
-                    Image(
-                        painter = painterResource(id = R.drawable.heart),
-                        contentDescription = "Heart",
-                        modifier = Modifier.size(50.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Text(
-                        text = "A cleaner smile brighter days!",
-                        color = Color(0xFF191B2C),
-                        fontSize = 18.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BrushBuddyTheme {
-        Greeting("Morning",
-            brushingStatus = BrushingStatus.IDLE,
-            totalBrushes = 0,
-            brushingTimeSeconds = 0,
-            onBrushNowClick = {})
     }
 }

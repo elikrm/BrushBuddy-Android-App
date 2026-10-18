@@ -3,6 +3,7 @@ package com.elnaz.brushbuddy.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,12 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.elnaz.brushbuddy.R
+import com.elnaz.brushbuddy.data.local.BrushingSession
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
-fun WeeklyStreakCard() {
+fun WeeklyStreakCard(allSessions: List<BrushingSession>) {
 
     // Get today's date
     val today = LocalDate.now()
@@ -77,6 +81,19 @@ fun WeeklyStreakCard() {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 days.forEach { day ->
+                    val isMorningDone = allSessions.any { session ->
+                        val sessionDateTime = Instant.ofEpochMilli(session.startTime)
+                            .atZone(ZoneId.systemDefault())
+                        sessionDateTime.toLocalDate() == day &&
+                                sessionDateTime.hour in 5..11
+                    }
+                    val isEveningDone = allSessions.any { session ->
+                        val sessionDateTime = Instant.ofEpochMilli(session.startTime)
+                            .atZone(ZoneId.systemDefault())
+                        sessionDateTime.toLocalDate() == day &&
+                                sessionDateTime.hour in 15..21
+                    }
+                    val isDayCompleted = isMorningDone && isEveningDone
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -85,8 +102,15 @@ fun WeeklyStreakCard() {
                             modifier = Modifier
                                 .size(32.dp)
                                 .background(
-                                    Color(0xFFE0E5EB),
+                                    if (isDayCompleted) Color(0xFF00C9A7)
+                                    else Color.Transparent,
                                     CircleShape
+                                )
+                                .border(
+                                    width = 2.dp,
+                                    color = if (isDayCompleted) Color(0xFF00C9A7)
+                                    else Color(0xFFE0E5EB),
+                                    shape = CircleShape
                                 )
                         )
 
